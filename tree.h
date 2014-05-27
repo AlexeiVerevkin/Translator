@@ -12,5 +12,6 @@
 #define DIV 8
 typedef struct tBranch Branch;
 Branch * create_tree(Lex * plex); /*returns poiter to the root of the created tree of Lexems*/
+void tree_print(Branch * root);
 #undef TREE_H
 #endif

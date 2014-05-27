@@ -95,6 +95,7 @@ Branch * lexpr(Dump * plex)
 	}
 	new_one->child[0] = id (plex);
 	new_one->mean = LEXPR;
+	new_one->nchild = 1;
 	new_one->value = NULL;
 	return new_one;
 }
@@ -108,6 +109,7 @@ Branch * id(Dump * plex)
 		return NULL;
 	}
 	new_one->mean = ID;
+	new_one->nchild = 0;
 	new_one->child = NULL;
 	new_one->value = get_value(plex->current);
 	if (get_next(get_next(plex->current)) == NULL)
@@ -127,6 +129,7 @@ Branch * expr(Dump * plex)
 		return NULL;
 	}
 	new_one->mean = EXPR;
+	new_one->nchild = 1;
 	new_one->value = NULL;
 	new_one->child = (Branch *)malloc(sizeof(Branch));
 	if (new_one->child == NULL)
@@ -232,4 +235,23 @@ Branch * add(Dump * plex)
 	new_one->value = NULL;
 	plex->current = get_next(plex->current);
 	return new_one;
+}
+
+void tree_print (Branch * root)
+{
+	if (root != NULL)
+	{
+		printf("The mean of Node is %d, his value is %s, his kids are:\n", root->mean, root->value);
+		if (root->nchild != 0)
+		{
+			for (int i = 0; i < root->nchild; i++)
+			{
+				tree_print(root->child[i]);
+			}
+		}
+		else
+		{
+			printf("He has no kids.\n");
+		}
+	}
 }
