@@ -13,6 +13,10 @@
 #define IF -8 /*if-construction token*/
 #define ELSE -9 /*else-construction token*/
 #define WHILE -10 /*while construction token*/
+#define PROGR -11 /*programm header token*/
+#define LOE -12 /*<= token*/
+#define MOE -13 /*>= token*/
+#define EQ -14 /*== token*/
 typedef struct tLex Lex; /*Current of Lexes*/
 typedef struct tNode Node; /*Node of one Lex*/
 Lex * create_Lex(char * input); /*Create a current of Lex*/

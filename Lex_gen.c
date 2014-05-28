@@ -53,7 +53,7 @@ void append(Lex * plex, int token, char * data) /*function*/
 	}
 }
 
-Lex * create_Lex (char * input)
+Lex * create_Lex(char * input)
 {
 	Lex * new_one;
 	new_one = (Lex *)malloc(sizeof (Lex));
@@ -155,8 +155,13 @@ Lex * create_Lex (char * input)
 				{
 					if (c == '#')
 					{
-						while (!(c == '#' || c == '\0'))
+						c = *(input++);
+						while (c != '#')
 						{
+							if (c == '\0')
+							{
+								break;
+							}
 							c = *(input++);
 						}
 						c = *(input++);

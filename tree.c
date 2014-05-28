@@ -409,3 +409,43 @@ int check(int token_b, int token_curr)
 		return 0;
 	}
 }
+
+int child_n(Branch * root)
+{
+	if (root == NULL)
+	{
+		printf("Invalid pointer.\n");
+		return NULL;
+	}
+	return root->nchild;
+}
+
+int get_mean(Branch * root)
+{
+	if (root == NULL)
+	{
+		printf("Invalid pointer.\n");
+		return NULL;
+	}
+	return root->mean;
+}
+
+char * t_value(Branch * root)
+{
+	if (root == NULL)
+	{
+		printf("Invalid pointer.\n");
+		return NULL;
+	}
+	return root->value;
+}
+
+Branch ** kids(Branch * root)
+{
+	if (root == NULL)
+	{
+		printf("Invalid pointer.\n");
+		return NULL;
+	}
+	return root->child;
+}
