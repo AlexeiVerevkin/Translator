@@ -19,6 +19,7 @@ int main()
 		i++;
 	}
 	tree = create_tree(test, out);
+	fclose(out);
 	destroy_Lex(test);
 	tree_print(tree);
 	tree_free(tree);

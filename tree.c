@@ -32,7 +32,9 @@ Branch * add(Dump * pdump);
 
 Branch * sub(Dump * plex);
 
-void error(Dump * pdump);
+void error(Dump * pdump, int expected, int current);
+
+void create_operator(int token, Branch * now, int i, Dump * pdump);
 
 Branch * create_tree (Lex * plex, FILE * errors)
 {
@@ -47,6 +49,11 @@ Branch * create_tree (Lex * plex, FILE * errors)
 	pdump->current = get_first(plex);
 	pdump->errors_file = errors;
 	root = stmt (pdump);
+	if (pdump->correct == 0 || stmt == NULL)
+	{
+		free(pdump);
+		return NULL;
+	}
 	free(pdump);
 	return root;
 }
@@ -58,7 +65,7 @@ Branch * stmt(Dump * plex)
 	{
 		if (get_token(get_next(plex->current)) != ASSIGN)
 		{
-			error(plex);
+			error(plex, ASSIGN, get_token(get_next(plex->current)));
 			return NULL;
 		}
 		new_one = (Branch *)malloc(sizeof (Branch));
@@ -86,6 +93,10 @@ Branch * stmt(Dump * plex)
 
 Branch * lexpr(Dump * plex)
 {
+	if (get_token(plex->current) != ID)
+	{
+		error(plex, ID, get_token(plex->current));
+	}
 	Branch * new_one = (Branch *)malloc(sizeof (Branch));
 	if (new_one == NULL)
 	{
@@ -102,26 +113,6 @@ Branch * lexpr(Dump * plex)
 	new_one->mean = LEXPR;
 	new_one->nchild = 1;
 	new_one->value = NULL;
-	return new_one;
-}
-
-Branch * id(Dump * plex)
-{
-	Branch * new_one = (Branch *)malloc(sizeof(Branch));
-	if (new_one == NULL)
-	{
-		printf("Not enough memory.\n");
-		return NULL;
-	}
-	new_one->mean = ID;
-	new_one->nchild = 0;
-	new_one->child = NULL;
-	new_one->value = strdup(get_value(plex->current));
-	if (get_next(get_next(plex->current)) == NULL)
-	{
-		//error(plex);
-	}
-	plex->current =get_next(plex->current);
 	return new_one;
 }
 
@@ -160,12 +151,20 @@ Branch * arith(Dump * plex, int stop)
 	new_one->child = NULL;
 	while (get_token(plex->current) != stop)
 	{
+		if (stop == ')')
+		{
+			if (get_token(plex->current) == ';' || get_token(plex->current) == NULL)
+			{
+				error(plex, ')', ';');
+				return NULL;
+			}
+		}
 		if (get_token(plex->current) == '(')
 		{
 			plex->current = get_next(plex->current);
 			Branch * one = arith(plex, ')');
 			plex->current = get_next(plex->current);
-			new_one->child = (Branch *)realloc(new_one->child, (i + 1)*sizeof(Branch));
+			new_one->child = (Branch **)realloc(new_one->child, (i + 1)*sizeof(Branch));
 			if (new_one->child == NULL)
 			{
 				printf("Not enough memory for kids.\n");
@@ -176,7 +175,7 @@ Branch * arith(Dump * plex, int stop)
 		}
 		if (get_token(plex->current) == ID)
 		{
-			new_one->child = (Branch *)realloc(new_one->child, (i + 1)*sizeof(Branch));
+			new_one->child = (Branch **)realloc(new_one->child, (i + 1)*sizeof(Branch));
 			if (new_one->child == NULL)
 			{
 				printf("Not enough memory for kids.\n");
@@ -187,7 +186,7 @@ Branch * arith(Dump * plex, int stop)
 		}
 		if (get_token(plex->current) == NUM)
 		{
-			new_one->child = (Branch *)realloc(new_one->child, (i + 1)*sizeof(Branch));
+			new_one->child = (Branch **)realloc(new_one->child, (i + 1)*sizeof(Branch));
 			if (new_one->child == NULL)
 			{
 				printf("Not enough memory for kids.\n");
@@ -198,24 +197,13 @@ Branch * arith(Dump * plex, int stop)
 		}
 		if (get_token(plex->current) == '+')
 		{
-			new_one->child = (Branch *)realloc(new_one->child, (i + 1)*sizeof(Branch));
-			if (new_one->child == NULL)
-			{
-				printf("Not enough memory for kids.\n");
-				return NULL;
-			}
-			new_one->child[i] = add(plex);
+			create_operator('+', new_one, i, plex);
 			i++;
 		}
 		if (get_token(plex->current) == '-')
 		{
-			new_one->child = (Branch *)realloc(new_one->child, (i + 1)*sizeof(Branch));
-			if (new_one->child == NULL)
-			{
-				printf("Not enough memory for kids.\n");
-				return NULL;
-			}
-			new_one->child[i] = sub(plex);
+
+			create_operator('-', new_one, i, plex);
 			i++;
 		}
 	}
@@ -234,6 +222,22 @@ Branch * num(Dump * plex)
 	new_one->child = NULL;
 	new_one->mean = NUM;
 	new_one->nchild = 0;
+	new_one->value = strdup(get_value(plex->current));
+	plex->current = get_next(plex->current);
+	return new_one;
+}
+
+Branch * id(Dump * plex)
+{
+	Branch * new_one = (Branch *)malloc(sizeof(Branch));
+	if (new_one == NULL)
+	{
+		printf("Not enough memory.\n");
+		return NULL;
+	}
+	new_one->mean = ID;
+	new_one->nchild = 0;
+	new_one->child = NULL;
 	new_one->value = strdup(get_value(plex->current));
 	plex->current = get_next(plex->current);
 	return new_one;
@@ -333,7 +337,48 @@ void tree_free(Branch * root)
 	}
 }
 
-void error(Dump * plex)
+void create_operator(int token, Branch * now, int i, Dump* plex)
 {
+	now->child = (Branch **)realloc(now->child, (i + 1)*sizeof(Branch));
+	if (now->child == NULL)
+	{
+		printf("Not enough memory for kids.\n");
+		now->child[i] = NULL;
+		return;
+	}
+	if (!(get_token(get_next(plex->current)) == NUM || get_token(get_next(plex->current)) == ID || get_token(get_next(plex->current)) == '('))
+	{
+		now->child[i] = NULL;
+		error(plex, OPER, NULL);
+		return;
+	}
+	if (!(get_token(get_prev(plex->current)) == NUM || get_token(get_prev(plex->current)) == ID || get_token(get_prev(plex->current)) == ')'))
+	{
+		now->child[i] = NULL;
+		error(plex, OPER, NULL);
+		return;
+	}
+	if (token == '+')
+	{
+		now->child[i] = add(plex);
+	}
+	if (token == '-')
+	{
+		now->child[i] = sub(plex);
+	}
+}
 
+void error(Dump * plex, int expected, int current)
+{
+	plex->correct = 0;
+	fprintf(plex->errors_file, "Error occured while parsing:\n");
+	if (expected == OPER)
+	{
+		fprintf(plex->errors_file, "Incorrect operator usage. No variables or numbers surrounding him.\n");
+	}
+	else
+	{
+		fprintf(plex->errors_file, "Symbol with token %d was expected, but got %d.\n", expected, current);
+	}
+	plex->current = get_next(plex->current);
 }

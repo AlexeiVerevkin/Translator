@@ -10,6 +10,7 @@
 #define SUB 6
 #define MULT 7
 #define DIV 8
+#define OPER 9
 typedef struct tBranch Branch;
 Branch * create_tree(Lex * plex); /*returns poiter to the root of the created tree of Lexems*/
 void tree_print(Branch * root);/*print out AST*/

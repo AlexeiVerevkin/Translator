@@ -168,7 +168,7 @@ int get_token(Node * in)
 {
 	if (in == NULL)
 	{
-		printf("!Invalid pointer.\n");
+		printf("Invalid pointer.\n");
 		return NULL;
 	}
 	return in->token;
