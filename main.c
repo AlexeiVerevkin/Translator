@@ -9,7 +9,7 @@ int main()
 	FILE * out;
 	out = fopen("errors.txt","w");
 	int i = 1;
-	Lex * test = create_Lex("x := 23.0 + 25;");
+	Lex * test = create_Lex("x := (4+23.0) - 25;");
 	Node * past = get_first(test);
 	Branch * tree;
 	while (past != NULL)
@@ -19,8 +19,9 @@ int main()
 		i++;
 	}
 	tree = create_tree(test, out);
-	tree_print(tree);
 	destroy_Lex(test);
+	tree_print(tree);
+	tree_free(tree);
 	_CrtDumpMemoryLeaks();
 	return 0;
 }

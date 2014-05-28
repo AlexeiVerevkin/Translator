@@ -145,7 +145,6 @@ Node * get_prev(Node * in)
 
 void destroy_Lex(Lex * plex)
 {
-
 	Node * past;
 	if (plex == NULL)
 	{
