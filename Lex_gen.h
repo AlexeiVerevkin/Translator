@@ -3,10 +3,11 @@
 #include <string.h>
 #include <ctype.h>
 #define LEX_GEN_H
-#define NUM -1
-#define ID -2
-#define DIVN -3
-#define ASSIGN -4
+#define NUM -1 /*Number token*/
+#define ID -2 /*variable token*/
+#define ASSIGN -3 /*<:=> token*/
+#define F_ID -6 /*Function's ID token*/
+#define ARR_ID -7 /*Array ID token*/
 typedef struct tLex Lex; /*Current of Lexes*/
 typedef struct tNode Node; /*Node of one Lex*/
 Lex * create_Lex(char * input); /*Create a current of Lex*/

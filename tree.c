@@ -28,11 +28,7 @@ Branch * arith(Dump * pdump, int stop);
 
 Branch * num(Dump * pdump);
 
-Branch * add(Dump * pdump);
-
-Branch * sub(Dump * plex);
-
-void error(Dump * pdump, int expected, int current);
+void error(Dump * pdump, int nexpected);
 
 void create_operator(int token, Branch * now, int i, Dump * pdump);
 
@@ -63,11 +59,6 @@ Branch * stmt(Dump * plex)
 	Branch * new_one;
 	if (get_token(plex->current) == ID)
 	{
-		if (get_token(get_next(plex->current)) != ASSIGN)
-		{
-			error(plex, ASSIGN, get_token(get_next(plex->current)));
-			return NULL;
-		}
 		new_one = (Branch *)malloc(sizeof (Branch));
 		if (new_one == NULL)
 		{
@@ -95,7 +86,7 @@ Branch * lexpr(Dump * plex)
 {
 	if (get_token(plex->current) != ID)
 	{
-		error(plex, ID, get_token(plex->current));
+		error(plex, ID);
 	}
 	Branch * new_one = (Branch *)malloc(sizeof (Branch));
 	if (new_one == NULL)
@@ -146,17 +137,27 @@ Branch * arith(Dump * plex, int stop)
 		printf("Not enough memory.\n");
 		return NULL;
 	}
+	if (check(ASSIGN, get_token(plex->current)) == 1)
+	{
+		error(plex, get_token(plex->current));
+	}
 	new_one->mean = ARITH;
 	new_one->value = NULL;
 	new_one->child = NULL;
 	while (get_token(plex->current) != stop)
 	{
-		if (stop == ')')
+		if (stop == ';')
 		{
-			if (get_token(plex->current) == ';' || get_token(plex->current) == NULL)
+			if (get_token(plex->current) == ')')
 			{
-				error(plex, ')', ';');
-				return NULL;
+				error(plex, get_token(plex->current));
+			}
+		}
+		else
+		{
+			if (get_token(plex->current) == ';')
+			{
+				error(plex, get_token(plex->current));
 			}
 		}
 		if (get_token(plex->current) == '(')
@@ -171,6 +172,10 @@ Branch * arith(Dump * plex, int stop)
 				return NULL;
 			}
 			new_one->child[i] = one;
+			if (check(ID, get_token(plex->current)) == 1)
+			{
+				error(plex, get_token(plex->current));
+			}
 			i++;
 		}
 		if (get_token(plex->current) == ID)
@@ -202,8 +207,17 @@ Branch * arith(Dump * plex, int stop)
 		}
 		if (get_token(plex->current) == '-')
 		{
-
 			create_operator('-', new_one, i, plex);
+			i++;
+		}
+		if (get_token(plex->current) == '*')
+		{
+			create_operator('*', new_one, i, plex);
+			i++;
+		}
+		if (get_token(plex->current) == '/')
+		{
+			create_operator('/', new_one, i, plex);
 			i++;
 		}
 	}
@@ -222,6 +236,10 @@ Branch * num(Dump * plex)
 	new_one->child = NULL;
 	new_one->mean = NUM;
 	new_one->nchild = 0;
+	if (check(ID, get_token(get_next(plex->current))) == 1)
+	{
+		error(plex, get_token(get_next(plex->current)));
+	}
 	new_one->value = strdup(get_value(plex->current));
 	plex->current = get_next(plex->current);
 	return new_one;
@@ -238,55 +256,11 @@ Branch * id(Dump * plex)
 	new_one->mean = ID;
 	new_one->nchild = 0;
 	new_one->child = NULL;
+	if (check(ID, get_token(get_next(plex->current))) == 1)
+	{
+		error(plex, get_token(get_next(plex->current)));
+	}
 	new_one->value = strdup(get_value(plex->current));
-	plex->current = get_next(plex->current);
-	return new_one;
-}
-
-Branch * add(Dump * plex)
-{
-	Branch * new_one = (Branch *)malloc(sizeof (Branch));
-	if (new_one == NULL)
-	{
-		printf("Not enough memory.\n");
-		return NULL;
-	}
-	new_one->child = NULL;
-	new_one->mean = ADD;
-	new_one->nchild = 0;
-	new_one->value = NULL;
-	plex->current = get_next(plex->current);
-	return new_one;
-}
-
-Branch * sub (Dump * plex)
-{
-	Branch * new_one = (Branch *)malloc(sizeof (Branch));
-	if (new_one == NULL)
-	{
-		printf("Not enough memory.\n");
-		return NULL;
-	}
-	new_one->child = NULL;
-	new_one->mean = SUB;
-	new_one->nchild = 0;
-	new_one->value = NULL;
-	plex->current = get_next(plex->current);
-	return new_one;
-}
-
-Branch * mult(Dump * plex)
-{
-	Branch * new_one = (Branch *)malloc(sizeof (Branch));
-	if (new_one == NULL)
-	{
-		printf("Not enough memory.\n");
-		return NULL;
-	}
-	new_one->child = NULL;
-	new_one->mean = MULT;
-	new_one->nchild = 0;
-	new_one->value = NULL;
 	plex->current = get_next(plex->current);
 	return new_one;
 }
@@ -339,6 +313,7 @@ void tree_free(Branch * root)
 
 void create_operator(int token, Branch * now, int i, Dump* plex)
 {
+	Branch * new_one;
 	now->child = (Branch **)realloc(now->child, (i + 1)*sizeof(Branch));
 	if (now->child == NULL)
 	{
@@ -346,39 +321,87 @@ void create_operator(int token, Branch * now, int i, Dump* plex)
 		now->child[i] = NULL;
 		return;
 	}
-	if (!(get_token(get_next(plex->current)) == NUM || get_token(get_next(plex->current)) == ID || get_token(get_next(plex->current)) == '('))
+	if (check(OPER,get_token(get_next(plex->current))) == 1)
 	{
+		error(plex, get_token(get_next(plex->current)));
+	}
+	new_one = (Branch *)malloc(sizeof (Branch));
+	if (new_one == NULL)
+	{
+		printf("Not enough memory.\n");
 		now->child[i] = NULL;
-		error(plex, OPER, NULL);
 		return;
 	}
-	if (!(get_token(get_prev(plex->current)) == NUM || get_token(get_prev(plex->current)) == ID || get_token(get_prev(plex->current)) == ')'))
-	{
-		now->child[i] = NULL;
-		error(plex, OPER, NULL);
-		return;
-	}
-	if (token == '+')
-	{
-		now->child[i] = add(plex);
-	}
-	if (token == '-')
-	{
-		now->child[i] = sub(plex);
-	}
+	new_one->child = NULL;
+	new_one->mean = token;
+	new_one->nchild = 0;
+	new_one->value = NULL;
+	plex->current = get_next(plex->current);
+	now->child[i] = new_one;
 }
 
-void error(Dump * plex, int expected, int current)
+void error(Dump * plex, int nexpected)
 {
 	plex->correct = 0;
 	fprintf(plex->errors_file, "Error occured while parsing:\n");
-	if (expected == OPER)
-	{
-		fprintf(plex->errors_file, "Incorrect operator usage. No variables or numbers surrounding him.\n");
-	}
-	else
-	{
-		fprintf(plex->errors_file, "Symbol with token %d was expected, but got %d.\n", expected, current);
-	}
+	fprintf(plex->errors_file,"Token %d is unexpected there.\n",nexpected);
 	plex->current = get_next(plex->current);
+}
+
+int check(int token_b, int token_curr)
+{
+	if (token_b == ID)
+	{
+		int res = 0;
+		int arr[] = { '+', '-', '*', '/', ASSIGN, ';',')'};
+		int i;
+		for (i = 0; i < 7; i++)
+		{
+			if (token_curr == arr [i])
+			{
+				res++;
+			}
+		}
+		if (res == 0)
+		{
+			return 1;
+		}
+		return 0;
+	}
+	if (token_b == OPER)
+	{
+		int res = 0;
+		int arr[] = {NUM, ID, '('};
+		int i;
+		for (i = 0; i < 3; i++)
+		{
+			if (token_curr == arr[i])
+			{
+				res++;
+			}
+		}
+		if (res == 0)
+		{
+			return 1;
+		}
+		return 0;
+	}
+	if (token_b == ASSIGN)
+	{
+		int res = 0;
+		int arr[] = {NUM, ID, '('};
+		int i;
+		for (i = 0; i < 3; i++)
+		{
+			if (token_curr == arr[i])
+			{
+				res++;
+			}
+		}
+		if (res == 0)
+		{
+			return 1;
+		}
+		return 0;
+	}
 }

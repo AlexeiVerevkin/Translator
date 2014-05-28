@@ -84,6 +84,7 @@ Lex * create_Lex (char * input)
 			if (isalpha(c))
 			{
 				int i = 0;
+				int true = 0;
 				char str[256] = "";
 				while (isalpha(c) || (isdigit(c) || c == '_'))
 				{
@@ -91,7 +92,23 @@ Lex * create_Lex (char * input)
 					c = *(input++);
 					i++;
 				}
-				append(new_one, ID, strdup(str));
+				if (true == 0)
+				{
+					if (c == '(')
+					{
+						append(new_one, F_ID, strdup(str));
+						true++;
+					}
+					if (c == '[')
+					{
+						append(new_one, ARR_ID, strdup(str));
+						true++;
+					}
+					if (true == 0)
+					{
+						append(new_one, ID, strdup(str));
+					}
+				}
 			}
 			else
 			{

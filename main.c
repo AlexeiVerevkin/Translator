@@ -9,7 +9,7 @@ int main()
 	FILE * out;
 	out = fopen("errors.txt","w");
 	int i = 1;
-	Lex * test = create_Lex("x := (4+23.0) - 25;");
+	Lex * test = create_Lex("x := ( 4 + 23.0 )*y - 25 + 23;");
 	Node * past = get_first(test);
 	Branch * tree;
 	while (past != NULL)
@@ -20,6 +20,10 @@ int main()
 	}
 	tree = create_tree(test, out);
 	fclose(out);
+	if (tree == NULL)
+	{
+		printf("Unable to create tree.\n");
+	}
 	destroy_Lex(test);
 	tree_print(tree);
 	tree_free(tree);
