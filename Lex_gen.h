@@ -6,8 +6,13 @@
 #define NUM -1 /*Number token*/
 #define ID -2 /*variable token*/
 #define ASSIGN -3 /*<:=> token*/
-#define F_ID -6 /*Function's ID token*/
-#define ARR_ID -7 /*Array ID token*/
+#define F_ID -4 /*Function's ID token*/
+#define ARR_ID -5 /*Array ID token*/
+#define BEGIN -6 /*begin token*/
+#define END -7 /*end token*/
+#define IF -8 /*if-construction token*/
+#define ELSE -9 /*else-construction token*/
+#define WHILE -10 /*while construction token*/
 typedef struct tLex Lex; /*Current of Lexes*/
 typedef struct tNode Node; /*Node of one Lex*/
 Lex * create_Lex(char * input); /*Create a current of Lex*/

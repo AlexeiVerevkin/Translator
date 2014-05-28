@@ -28,9 +28,9 @@ Branch * arith(Dump * pdump, int stop);
 
 Branch * num(Dump * pdump);
 
-void error(Dump * pdump, int nexpected);
+void error(Dump * pdump, int nexpected); /*errors comprehensing*/
 
-void create_operator(int token, Branch * now, int i, Dump * pdump);
+void create_operator(int token, Branch * now, int i, Dump * pdump); /*creating lexems for binary operator*/
 
 Branch * create_tree (Lex * plex, FILE * errors)
 {
@@ -86,7 +86,11 @@ Branch * lexpr(Dump * plex)
 {
 	if (get_token(plex->current) != ID)
 	{
-		error(plex, ID);
+		error(plex, get_token(plex->current));
+	}
+	if (get_token(get_next(plex->current)) != ASSIGN)
+	{
+		error(plex, get_token(get_next(plex->current)));
 	}
 	Branch * new_one = (Branch *)malloc(sizeof (Branch));
 	if (new_one == NULL)
@@ -321,10 +325,6 @@ void create_operator(int token, Branch * now, int i, Dump* plex)
 		now->child[i] = NULL;
 		return;
 	}
-	if (check(OPER,get_token(get_next(plex->current))) == 1)
-	{
-		error(plex, get_token(get_next(plex->current)));
-	}
 	new_one = (Branch *)malloc(sizeof (Branch));
 	if (new_one == NULL)
 	{
@@ -337,6 +337,10 @@ void create_operator(int token, Branch * now, int i, Dump* plex)
 	new_one->nchild = 0;
 	new_one->value = NULL;
 	plex->current = get_next(plex->current);
+	if (check(OPER, get_token(plex->current)) == 1)
+	{
+		error(plex, get_token(plex->current));
+	}
 	now->child[i] = new_one;
 }
 

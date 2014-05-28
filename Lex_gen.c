@@ -92,6 +92,31 @@ Lex * create_Lex (char * input)
 					c = *(input++);
 					i++;
 				}
+				if (strcmp(str, "if") == 0)
+				{
+					append(new_one, IF, NULL);
+					true++;
+				}
+				if (strcmp(str, "else") == 0)
+				{
+					append(new_one, ELSE, NULL);
+					true++;
+				}
+				if (strcmp(str, "begin") == 0)
+				{
+					append(new_one, BEGIN, NULL);
+					true++;
+				}
+				if (strcmp(str, "end") == 0)
+				{
+					append(new_one, END, NULL);
+					true++;
+				}
+				if (strcmp(str, "while") == 0)
+				{
+					append(new_one, WHILE, NULL);
+					true++;
+				}
 				if (true == 0)
 				{
 					if (c == '(')
@@ -128,6 +153,14 @@ Lex * create_Lex (char * input)
 				}
 				else
 				{
+					if (c == '#')
+					{
+						while (!(c == '#' || c == '\0'))
+						{
+							c = *(input++);
+						}
+						c = *(input++);
+					}
 					if (!isspace(c))
 					{
 						append(new_one, (int)c, NULL);
