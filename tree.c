@@ -214,6 +214,7 @@ Branch * arith(Dump * plex, int stop1, int stop2)
 	new_one->child = NULL;
 	while (!(get_token(plex->current) == stop1 || get_token(plex->current) == stop2))
 	{
+		printf("%c %c %c\n", get_token(plex->current), stop1, stop2);
 		if (get_token(plex->current) == '(')
 		{
 			plex->current = get_next(plex->current);
@@ -263,6 +264,17 @@ Branch * arith(Dump * plex, int stop1, int stop2)
 				return NULL;
 			}
 			new_one->child[i] = call(plex);
+			i++;
+		}
+		if (get_token(plex->current) == ARR_ID)
+		{
+			new_one->child = (Branch **)realloc(new_one->child, (i + 1)*sizeof(Branch));
+			if (new_one->child == NULL)
+			{
+				printf("Not enough memory for kids.\n");
+				return NULL;
+			}
+			new_one->child[i] = arr(plex);
 			i++;
 		}
 		if (get_token(plex->current) == '+')
@@ -321,6 +333,82 @@ Branch * call(Dump *plex)
 	}
 }
 
+Branch * arr(Dump *plex)
+{
+	Branch * new_one = (Branch *)malloc(sizeof (Branch));
+	if (new_one == NULL)
+	{
+		printf("Not enough memory.\n");
+		return NULL;
+	}
+	new_one->mean = ARR;
+	new_one->nchild = 2;
+	new_one->child = (Branch **)malloc(2 * sizeof(Branch));
+	new_one->value = NULL;
+	if (new_one->child == NULL)
+	{
+		printf("Not enough memory for kids.\n");
+		return NULL;
+	}
+	if (get_token(plex->current) != ARR_ID)
+	{
+		error(plex, get_token(plex->current));
+		return NULL;
+	}
+	else
+	{
+		new_one->child[0] = id_arr(plex);
+		new_one->child[1] = arr_args(plex);
+		//check!!!! Like arith
+		return new_one;
+	}
+}
+
+Branch * id_arr(Dump * plex)
+{
+	Branch * new_one = (Branch *)malloc(sizeof (Branch));
+	if (new_one == NULL)
+	{
+		printf("Not enough memory.\n");
+		return NULL;
+	}
+	new_one->mean = ARR_ID;
+	new_one->nchild = 0;
+	new_one->child = NULL;
+	new_one->value = strdup(get_value(plex->current));
+	plex->current = get_next(plex->current);
+	return new_one;
+}
+
+Branch * arr_args(Dump * plex)
+{
+	Branch * new_one;
+	if (get_token(plex->current) != '[')
+	{
+		error(plex, get_token(plex->current));
+		return NULL;
+	}
+	plex->current = get_next(plex->current);
+	new_one = (Branch *)malloc(sizeof (Branch));
+	if (new_one == NULL)
+	{
+		printf("Not enough memory.\n");
+		return NULL;
+	}
+	new_one->mean = ARR_ARGS;
+	new_one->child = (Branch **)malloc(sizeof (Branch));
+	if (new_one->child == NULL)
+	{
+		printf("Not enough memory for kids.\n");
+		return NULL;
+	}
+	new_one->child[0] = arith(plex, ']', ']');
+	new_one->nchild = 1;
+	plex->current = get_next(plex->current);
+	new_one->value = NULL;
+	return new_one;
+}
+
 Branch * id_f(Dump * plex)
 {
 	Branch * new_one = (Branch *)malloc(sizeof (Branch));
@@ -360,6 +448,11 @@ Branch * f_args(Dump * plex)
 	{
 		i++;
 		new_one->child = (Branch **)realloc(new_one->child,i*sizeof(Branch));
+		if (new_one->child == NULL)
+		{
+			printf("Not enough memory for kids.\n");
+			return NULL;
+		}
 		new_one->child[i - 1] = arith(plex, ',', ')');
 		if (get_token(plex->current) == ',')
 		{
@@ -499,9 +592,9 @@ int check(int token_b, int token_curr)
 	if (token_b == ID)
 	{
 		int res = 0;
-		int arr[] = { '+', '-', '*', '/', ASSIGN, ';',')',','};
+		int arr[] = { '+', '-', '*', '/', ASSIGN, ';',')',',',']'};
 		int i;
-		for (i = 0; i < 8; i++)
+		for (i = 0; i < 9; i++)
 		{
 			if (token_curr == arr [i])
 			{
@@ -517,9 +610,9 @@ int check(int token_b, int token_curr)
 	if (token_b == OPER)
 	{
 		int res = 0;
-		int arr[] = {NUM, ID, '(', F_ID};
+		int arr[] = {NUM, ID, '(', F_ID, ARR_ID};
 		int i;
-		for (i = 0; i < 4; i++)
+		for (i = 0; i < 5; i++)
 		{
 			if (token_curr == arr[i])
 			{

@@ -93,5 +93,20 @@ char * create_string(Branch * root)
 		strcat(str, create_string(kids(root)[child_n(root)-1]));
 		strcat(str, ")");
 	}
+	if (mean == ARR)
+	{
+		strcpy(str, create_string(kids(root)[0]));
+		strcat(str, create_string(kids(root)[1]));
+	}
+	if (mean == ARR_ID)
+	{
+		strcpy(str, t_value(root));
+	}
+	if (mean == ARR_ARGS)
+	{
+		strcpy(str, "[");
+		strcat(str, create_string(kids(root)[0]));
+		strcat(str, "]");
+	}
 	return str;
 }
