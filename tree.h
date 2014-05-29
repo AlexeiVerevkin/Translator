@@ -7,6 +7,11 @@
 #define EXPR 3 /*some expression*/
 #define ARITH 4 /*arithmeticl equation*/
 #define OPER 5 /*binary operator value*/
+#define CALL 6 /*functions call*/
+#define ARR 7 /*array call*/
+#define F_ARGS 8 /*argument of functions*/
+#define ARR_ARGS 9 /*arguments of array*/
+#define LINE 10 /*line that splits in statement and call*/
 typedef struct tBranch Branch;
 Branch * create_tree(Lex * plex); /*returns poiter to the root of the created tree of Lexems*/
 void tree_print(Branch * root);/*print out AST*/

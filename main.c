@@ -10,7 +10,7 @@ int main()
 	FILE * out;
 	out = fopen("errors.txt","w");
 	int i = 1;
-	Lex * test = create_Lex("y := 23 +, x -i;");
+	Lex * test = create_Lex("y := (23 + x) + count(i, 1) - i;");
 	Node * past = get_first(test);
 	Branch * tree;
 	while (past != NULL)

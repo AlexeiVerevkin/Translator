@@ -72,4 +72,26 @@ char * create_string(Branch * root)
 	{
 		strcpy(str, " / ");
 	}
+	if (mean == CALL)
+	{
+		strcpy(str, create_string(kids(root)[0]));
+		strcat(str, create_string(kids(root)[1]));
+	}
+	if (mean == F_ID)
+	{
+		strcpy(str, t_value(root));
+	}
+	if (mean == F_ARGS)
+	{
+		int i;
+		strcpy(str, "(");
+		for (i = 0; i < child_n(root) - 1; i++)
+		{
+			strcat(str, create_string(kids(root)[i]));
+			strcat(str, ",");
+		}
+		strcat(str, create_string(kids(root)[child_n(root)-1]));
+		strcat(str, ")");
+	}
+	return str;
 }
