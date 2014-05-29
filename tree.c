@@ -52,9 +52,9 @@ Branch * num(Dump * pdump);
 
 int check_end(int end, int current); /*checking parantheses and ends balance*/
 
-int check(int token_b, int token_curr); /*checking for errors that is connected with inability of some symbols to go after another*/
+int check(int token_b, int token_curr, int place); /*checking for errors that is connected with inability of some symbols to go after another*/
 
-void error(Dump * pdump, int nexpected); /*errors comprehensing*/
+void error(Dump * pdump, int nexpected, int expected); /*errors comprehensing*/
 
 void create_operator(int token, Branch * now, int i, Dump * pdump); /*creating lexems for binary operator*/
 
@@ -70,7 +70,7 @@ Branch * create_tree (Lex * plex, FILE * errors)
 	pdump->correct = 1;
 	pdump->current = get_first(plex);
 	pdump->errors_file = errors;
-	root = stmt (pdump);
+	root = line (pdump);
 	if (pdump->correct == 0 || stmt == NULL)
 	{
 		free(pdump);
@@ -91,6 +91,7 @@ Branch * line(Dump * plex)
 	}
 	new_one->mean = LINE;
 	new_one->nchild = 1;
+	new_one->value = NULL;
 	new_one->child = (Branch **)malloc(sizeof(Branch));
 	if (new_one->child == NULL)
 	{
@@ -101,15 +102,34 @@ Branch * line(Dump * plex)
 	{
 		new_one->child[0] = stmt(plex);
 		return new_one;
+		if (get_token(plex->current) == ';')
+		{
+			plex->current = get_next(plex->current);
+			return new_one;
+		}
+		else
+		{
+			error(plex, get_token(plex->current), ';');
+			return NULL;
+		}
 	}
 	if (get_token(plex->current) == F_ID)
 	{
 		new_one->child[0] = call(plex);
-		return new_one;
+		if (get_token(plex->current) == ';')
+		{
+			plex->current = get_next(plex->current);
+			return new_one;
+		}
+		else
+		{
+			error(plex, get_token(plex->current), ';');
+			return NULL;
+		}
 	}
 	else
 	{
-		error(plex, get_token(plex->current));
+		error(plex, get_token(plex->current), NULL);
 		return NULL;
 	}
 }
@@ -141,21 +161,13 @@ Branch * stmt(Dump * plex)
 	}
 	else
 	{
-		error(plex, get_token(plex->current));
+		error(plex, get_token(plex->current), NULL);
 		return NULL;
 	}
 }
 
 Branch * lexpr(Dump * plex)
 {
-	if (get_token(plex->current) != ID)
-	{
-		error(plex, get_token(plex->current));
-	}
-	if (get_token(get_next(plex->current)) != ASSIGN)
-	{
-		error(plex, get_token(get_next(plex->current)));
-	}
 	Branch * new_one = (Branch *)malloc(sizeof (Branch));
 	if (new_one == NULL)
 	{
@@ -168,7 +180,14 @@ Branch * lexpr(Dump * plex)
 		printf("Not enough memory for kids.\n");
 		return NULL;
 	}
-	new_one->child[0] = id (plex);
+	if (get_token(plex->current) == ID)
+	{
+		new_one->child[0] = id(plex);
+	}
+	else
+	{
+		new_one->child[0] = arr(plex);
+	}
 	new_one->mean = LEXPR;
 	new_one->nchild = 1;
 	new_one->value = NULL;
@@ -199,22 +218,35 @@ Branch * expr(Dump * plex)
 Branch * arith(Dump * plex, int stop1, int stop2)
 {
 	int i = 0;
+	int place = EXPR;
 	Branch * new_one = (Branch *)malloc(sizeof(Branch));
 	if (new_one == NULL)
 	{
 		printf("Not enough memory.\n");
 		return NULL;
 	}
-	if (check(ASSIGN, get_token(plex->current)) == 1)
+	if (stop1 == ']' && stop2 == ']')
 	{
-		error(plex, get_token(plex->current));
+		place = ARR_ARGS;
+	}
+	if (stop1 == ',' && stop2 == ')')
+	{
+		place = F_ARGS;
+	}
+	if (stop1 == ')' && stop2 == ')')
+	{
+		place = ARITH;
+	}
+	if (check(ASSIGN, get_token(plex->current),ARITH) == 1)
+	{
+		error(plex, get_token(plex->current), NULL);
+		return NULL;
 	}
 	new_one->mean = ARITH;
 	new_one->value = NULL;
 	new_one->child = NULL;
 	while (!(get_token(plex->current) == stop1 || get_token(plex->current) == stop2))
 	{
-		printf("%c %c %c\n", get_token(plex->current), stop1, stop2);
 		if (get_token(plex->current) == '(')
 		{
 			plex->current = get_next(plex->current);
@@ -227,9 +259,10 @@ Branch * arith(Dump * plex, int stop1, int stop2)
 				return NULL;
 			}
 			new_one->child[i] = one;
-			if (check(ID, get_token(plex->current)) == 1)
+			if (check(ID, get_token(plex->current), place) == 1)
 			{
-				error(plex, get_token(plex->current));
+				error(plex, get_token(plex->current),NULL);
+				return NULL;
 			}
 			i++;
 		}
@@ -243,6 +276,11 @@ Branch * arith(Dump * plex, int stop1, int stop2)
 			}
 			new_one->child[i] = id(plex);
 			i++;
+			if (check(ID, get_token(plex->current), place) == 1)
+			{
+				error(plex, get_token(plex->current), NULL);
+				return NULL;
+			}
 		}
 		if (get_token(plex->current) == NUM)
 		{
@@ -254,6 +292,11 @@ Branch * arith(Dump * plex, int stop1, int stop2)
 			}
 			new_one->child[i] = num(plex);
 			i++;
+			if (check(ID, get_token(plex->current), place) == 1)
+			{
+				error(plex, get_token(plex->current), NULL);
+				return NULL;
+			}
 		}
 		if (get_token(plex->current) == F_ID)
 		{
@@ -265,6 +308,11 @@ Branch * arith(Dump * plex, int stop1, int stop2)
 			}
 			new_one->child[i] = call(plex);
 			i++;
+			if (check(ID, get_token(plex->current), place) == 1)
+			{
+				error(plex, get_token(plex->current), NULL);
+				return NULL;
+			}
 		}
 		if (get_token(plex->current) == ARR_ID)
 		{
@@ -276,6 +324,11 @@ Branch * arith(Dump * plex, int stop1, int stop2)
 			}
 			new_one->child[i] = arr(plex);
 			i++;
+			if (check(ID, get_token(plex->current), place) == 1)
+			{
+				error(plex, get_token(plex->current), NULL);
+				return NULL;
+			}
 		}
 		if (get_token(plex->current) == '+')
 		{
@@ -321,14 +374,13 @@ Branch * call(Dump *plex)
 	}
 	if (get_token(plex->current) != F_ID)
 	{
-		error(plex, get_token(plex->current));
+		error(plex, get_token(plex->current), F_ID);
 		return NULL;
 	}
 	else
 	{
 		new_one->child[0] = id_f(plex);
 		new_one->child[1] = f_args(plex);
-		//check!!!! Like arith
 		return new_one;
 	}
 }
@@ -352,14 +404,13 @@ Branch * arr(Dump *plex)
 	}
 	if (get_token(plex->current) != ARR_ID)
 	{
-		error(plex, get_token(plex->current));
+		error(plex, get_token(plex->current), ARR_ID);
 		return NULL;
 	}
 	else
 	{
 		new_one->child[0] = id_arr(plex);
 		new_one->child[1] = arr_args(plex);
-		//check!!!! Like arith
 		return new_one;
 	}
 }
@@ -383,11 +434,6 @@ Branch * id_arr(Dump * plex)
 Branch * arr_args(Dump * plex)
 {
 	Branch * new_one;
-	if (get_token(plex->current) != '[')
-	{
-		error(plex, get_token(plex->current));
-		return NULL;
-	}
 	plex->current = get_next(plex->current);
 	new_one = (Branch *)malloc(sizeof (Branch));
 	if (new_one == NULL)
@@ -429,11 +475,6 @@ Branch * f_args(Dump * plex)
 {
 	int i = 0;
 	Branch * new_one;
-	if (get_token(plex->current) != '(')
-	{
-		error(plex, get_token(plex->current));
-		return NULL;
-	}
 	plex->current = get_next(plex->current);
 	new_one = (Branch *)malloc(sizeof (Branch));
 	if (new_one == NULL)
@@ -475,10 +516,6 @@ Branch * num(Dump * plex)
 	new_one->child = NULL;
 	new_one->mean = NUM;
 	new_one->nchild = 0;
-	if (check(ID, get_token(get_next(plex->current))) == 1)
-	{
-		error(plex, get_token(get_next(plex->current)));
-	}
 	new_one->value = strdup(get_value(plex->current));
 	plex->current = get_next(plex->current);
 	return new_one;
@@ -495,10 +532,6 @@ Branch * id(Dump * plex)
 	new_one->mean = ID;
 	new_one->nchild = 0;
 	new_one->child = NULL;
-	if (check(ID, get_token(get_next(plex->current))) == 1)
-	{
-		error(plex, get_token(get_next(plex->current)));
-	}
 	new_one->value = strdup(get_value(plex->current));
 	plex->current = get_next(plex->current);
 	return new_one;
@@ -572,45 +605,34 @@ void create_operator(int token, Branch * now, int i, Dump* plex)
 	new_one->nchild = 0;
 	new_one->value = NULL;
 	plex->current = get_next(plex->current);
-	if (check(OPER, get_token(plex->current)) == 1)
+	if (check(OPER, get_token(plex->current), NULL) == 1)
 	{
-		error(plex, get_token(plex->current));
+		error(plex, get_token(plex->current), NULL);
 	}
 	now->child[i] = new_one;
 }
 
-void error(Dump * plex, int nexpected)
+void error(Dump * plex, int nexpected, int expected)
 {
 	plex->correct = 0;
 	fprintf(plex->errors_file, "Error occured while parsing:\n");
-	fprintf(plex->errors_file,"Token %d is unexpected there.\n",nexpected);
+	if (expected == NULL)
+	{
+		fprintf(plex->errors_file, "Token %d is unexpected there.\n", nexpected);
+	}
+	else
+	{
+		fprintf(plex->errors_file, "Token %d was expected there, but got %d.\n", expected, nexpected);
+	}
 	plex->current = get_next(plex->current);
 }
 
-int check(int token_b, int token_curr)
+int check(int token_b, int token_curr, int place)
 {
-	if (token_b == ID)
+	if (token_b == ASSIGN)
 	{
 		int res = 0;
-		int arr[] = { '+', '-', '*', '/', ASSIGN, ';',')',',',']'};
-		int i;
-		for (i = 0; i < 9; i++)
-		{
-			if (token_curr == arr [i])
-			{
-				res++;
-			}
-		}
-		if (res == 0)
-		{
-			return 1;
-		}
-		return 0;
-	}
-	if (token_b == OPER)
-	{
-		int res = 0;
-		int arr[] = {NUM, ID, '(', F_ID, ARR_ID};
+		int arr[] = { NUM, ID, '(', F_ID, ARR_ID };
 		int i;
 		for (i = 0; i < 5; i++)
 		{
@@ -625,12 +647,12 @@ int check(int token_b, int token_curr)
 		}
 		return 0;
 	}
-	if (token_b == ASSIGN)
+	if (token_b == OPER)
 	{
 		int res = 0;
-		int arr[] = {NUM, ID, '('};
+		int arr[] = { NUM, ID, '(', F_ID, ARR_ID};
 		int i;
-		for (i = 0; i < 3; i++)
+		for (i = 0; i < 5; i++)
 		{
 			if (token_curr == arr[i])
 			{
@@ -642,6 +664,109 @@ int check(int token_b, int token_curr)
 			return 1;
 		}
 		return 0;
+	}
+	if (place == EXPR)
+	{
+		if (token_b == ID)
+		{
+			int res = 0;
+			int arr[] = { '+', '-', '*', '/', ';' };
+			int i;
+			for (i = 0; i < 5; i++)
+			{
+				if (token_curr == arr[i])
+				{
+					res++;
+				}
+			}
+			if (res == 0)
+			{
+				return 1;
+			}
+			return 0;
+		}
+	}
+	if (place == LEXPR)
+	{
+		if (ID == token_b)
+		{
+			if (token_curr != ASSIGN)
+			{
+				return 1;
+			}
+			return 0;
+		}
+		if (ARR == token_b)
+		{
+			if (token_curr != ASSIGN)
+			{
+				return 1;
+			}
+			return 0;
+		}
+	}
+	if (place == ARITH)
+	{
+		if (token_b == ID)
+		{
+			int res = 0;
+			int arr[] = { '+', '-', '*', '/', ')' };
+			int i;
+			for (i = 0; i < 5; i++)
+			{
+				if (token_curr == arr[i])
+				{
+					res++;
+				}
+			}
+			if (res == 0)
+			{
+				return 1;
+			}
+			return 0;
+		}
+	}
+	if (place == ARR_ARGS)
+	{
+		if (token_b == ID)
+		{
+			int res = 0;
+			int arr[] = { '+', '-', '*', '/', ']'};
+			int i;
+			for (i = 0; i < 5; i++)
+			{
+				if (token_curr == arr[i])
+				{
+					res++;
+				}
+			}
+			if (res == 0)
+			{
+				return 1;
+			}
+			return 0;
+		}
+	}
+	if (place == F_ARGS)
+	{
+		if (token_b == ID)
+		{
+			int res = 0;
+			int arr[] = { '+', '-', '*', '/', ')', ','};
+			int i;
+			for (i = 0; i < 6; i++)
+			{
+				if (token_curr == arr[i])
+				{
+					res++;
+				}
+			}
+			if (res == 0)
+			{
+				return 1;
+			}
+			return 0;
+		}
 	}
 }
 

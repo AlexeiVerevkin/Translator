@@ -23,6 +23,11 @@ char * create_string(Branch * root)
 {
 	char str[3000];
 	int mean = get_mean(root);
+	if (mean == LINE)
+	{
+		strcpy(str, create_string(kids(root)[0]));
+		strcat(str, ";");
+	}
 	if (mean == STMT)
 	{
 		strcpy(str,create_string(kids(root)[0]));
@@ -40,7 +45,6 @@ char * create_string(Branch * root)
 	if (mean == EXPR)
 	{
 		strcpy(str,create_string(kids(root)[0]));
-		strcat(str, ";");
 	}
 	if (mean == ARITH)
 	{
